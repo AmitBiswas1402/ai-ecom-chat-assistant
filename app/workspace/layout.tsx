@@ -1,5 +1,5 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
-import {AppSidebar} from "./_components/AppSidebar";
+import { AppSidebar } from "./_components/AppSidebar";
 import AppHeader from "./_components/AppHeader";
 
 const WorkSpaceLayout = ({
