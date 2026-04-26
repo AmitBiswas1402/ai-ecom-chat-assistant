@@ -72,9 +72,9 @@ const WebPageTools = ({
 
   useEffect(() => {
     const cleanCode = (HTML_CODE.replace("{code}", generatedCode) || "")
-      .replace("```html", "")
-      .replace("```", "")
-      .replace("html", "");
+      .replace(/```html/g, "")
+      .replace(/```/g, "")
+      .replace(/^\s*html\s*\n/gm, "");
     setFinalCode(cleanCode);
   }, [generatedCode]);
 

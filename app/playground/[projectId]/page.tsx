@@ -20,6 +20,38 @@ export type Messages = {
   image?: string; 
 };
 
+/** Check if a string is a URL */
+const isUrl = (str: string): boolean => {
+  try {
+    const trimmed = str.trim();
+    if (!/^https?:\/\//i.test(trimmed)) return false;
+    new URL(trimmed);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/** Build an enhanced prompt from scraped page data */
+const buildUrlPrompt = (url: string, data: any): string => {
+  let prompt = `Recreate a website inspired by ${url}.\n\n`;
+  prompt += `Here is the extracted content from that website:\n`;
+  if (data.title) prompt += `- Page Title: ${data.title}\n`;
+  if (data.metaDescription) prompt += `- Description: ${data.metaDescription}\n`;
+  if (data.navLinks?.length) prompt += `- Navigation Items: ${data.navLinks.join(", ")}\n`;
+  if (data.headings?.length) prompt += `- Headings: ${data.headings.join(" | ")}\n`;
+  if (data.paragraphs?.length) prompt += `- Content Sections:\n${data.paragraphs.map((p: string) => `  • ${p}`).join("\n")}\n`;
+  if (data.buttons?.length) prompt += `- Buttons/CTAs: ${data.buttons.join(", ")}\n`;
+  if (data.images?.length) prompt += `- Image Descriptions: ${data.images.join(", ")}\n`;
+  if (data.sections?.length) prompt += `- Page Sections/Landmarks: ${data.sections.join(", ")}\n`;
+  prompt += `\nGenerate a complete, modern, responsive HTML website (body content only) that recreates this design using Tailwind CSS and Flowbite components. Match the layout, sections, and content structure as closely as possible while making it visually stunning.`;
+  return prompt;
+};
+
+/** Strip trailing code fence markers from generated code */
+const cleanGeneratedCode = (code: string): string => {
+  return code.replace(/```\s*$/g, "").trim();
+};
 
 const Prompt = `
 userInput: {userInput}
@@ -102,7 +134,7 @@ const PlayGround = () => {
     // Safely check before processing
     if (designCode && designCode.includes("```html")) {
       const index = designCode.indexOf("```html") + 7;
-      const formattedCode = designCode.slice(index);
+      const formattedCode = cleanGeneratedCode(designCode.slice(index));
       setGeneratedCode(formattedCode);
     } else {
       setGeneratedCode(designCode || ""); 
@@ -119,14 +151,30 @@ const PlayGround = () => {
   const SendMessage = async (userInput: string) => {
     setLoading(true);
 
-    // Add user message to chart
+    // Add user message to chat
     setMessages((prev: any) => [...prev, { role: "user", content: userInput }]);
+
+    // Check if user input is a URL — if so, scrape and build enhanced prompt
+    let finalPrompt = userInput;
+    if (isUrl(userInput)) {
+      try {
+        toast.info("Analyzing website...");
+        const scrapeResult = await axios.post("/api/scrape-url", {
+          url: userInput.trim(),
+        });
+        finalPrompt = buildUrlPrompt(userInput.trim(), scrapeResult.data);
+      } catch (error) {
+        console.error("Failed to scrape URL:", error);
+        toast.error("Could not analyze the website, generating from URL text...");
+        finalPrompt = `Recreate a website similar to ${userInput}. Generate a complete, modern, responsive HTML website (body content only) using Tailwind CSS and Flowbite components.`;
+      }
+    }
 
     const result = await fetch("/api/ai-model", {
       method: "POST",
       body: JSON.stringify({
         messages: [
-          { role: "user", content: Prompt?.replace("{userInput}", userInput) },
+          { role: "user", content: Prompt?.replace("{userInput}", finalPrompt) },
         ],
       }),
     });
@@ -148,10 +196,15 @@ const PlayGround = () => {
         isCode = true;
         const index = aiResponse.indexOf("```html") + 7;
         const initialCodeChunk = aiResponse.slice(index);
-        setGeneratedCode((prev: any) => prev + initialCodeChunk);
+        setGeneratedCode((prev: any) => (prev || "") + initialCodeChunk);
       } else if (isCode) {
-        setGeneratedCode((prev: any) => prev + chunk);
+        setGeneratedCode((prev: any) => (prev || "") + chunk);
       }
+    }
+
+    // Clean trailing code fence from generated code
+    if (isCode) {
+      setGeneratedCode((prev) => cleanGeneratedCode(prev || ""));
     }
 
     await SaveGeneratedCode(aiResponse);

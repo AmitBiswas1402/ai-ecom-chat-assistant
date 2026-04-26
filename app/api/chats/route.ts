@@ -3,11 +3,13 @@ import { chatTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { frameId: string } }
-) {
-  const { frameId } = params;
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const frameId = searchParams.get("frameId");
+
+  if (!frameId) {
+    return NextResponse.json([], { status: 400 });
+  }
 
   const result = await db
     .select()
@@ -20,19 +22,15 @@ export async function GET(
 
 export async function PUT(req: NextRequest) {
   try {
-    const { messages, frameId, createdBy } = await req.json();
+    const { messages, frameId } = await req.json();
 
-    // TODO: persist to DB. Example (Drizzle) — uncomment and adapt:
-    // import { db } from "@/lib/db";
-    // import { chatTable } from "@/db/schema";
-    // const inserted = await db.insert(chatTable).values({
-    //   chatMessage: messages, // or chatMessages depending on your schema
-    //   frameId,
-    //   createdBy,
-    // }).returning();
+    // Actually persist chat messages to the database
+    await db
+      .update(chatTable)
+      .set({ chatMessage: messages })
+      .where(eq(chatTable.frameId, frameId));
 
-    console.log("PUT /api/chats payload:", { messages, frameId, createdBy });
-    return NextResponse.json({ ok: true, saved: true /*, inserted */ });
+    return NextResponse.json({ ok: true, saved: true });
   } catch (err: any) {
     console.error("PUT /api/chats error:", err);
     return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });

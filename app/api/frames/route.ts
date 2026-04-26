@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const frameId = searchParams.get("frameId");
-  searchParams.get("projectId");
+  const projectId = searchParams.get("projectId");
 
   const frameResult = await db
     .select()

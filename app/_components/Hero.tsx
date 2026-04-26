@@ -11,6 +11,7 @@ import {
   ImagePlus,
   Key,
   LayoutDashboard,
+  Link2,
   Loader2Icon,
   User,
   X,
@@ -57,6 +58,18 @@ const Hero = () => {
 
   const hasUnlimitedAccess = has && has({ plan: "unlimited" });
 
+  /** Check if user input is a URL */
+  const inputIsUrl = (() => {
+    try {
+      const trimmed = userInput.trim();
+      if (!/^https?:\/\//i.test(trimmed)) return false;
+      new URL(trimmed);
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith("image/")) {
@@ -87,10 +100,38 @@ const Hero = () => {
       imageUrl = uploadRes.data.url;
     }
 
+    // If user input is a URL, scrape it and build an enhanced prompt
+    let finalContent = userInput;
+    if (inputIsUrl) {
+      try {
+        toast.info("Analyzing website...");
+        const scrapeResult = await axios.post("/api/scrape-url", {
+          url: userInput.trim(),
+        });
+        const data = scrapeResult.data;
+        let prompt = `Recreate a website inspired by ${userInput.trim()}.\n\n`;
+        prompt += `Here is the extracted content from that website:\n`;
+        if (data.title) prompt += `- Page Title: ${data.title}\n`;
+        if (data.metaDescription) prompt += `- Description: ${data.metaDescription}\n`;
+        if (data.navLinks?.length) prompt += `- Navigation Items: ${data.navLinks.join(", ")}\n`;
+        if (data.headings?.length) prompt += `- Headings: ${data.headings.join(" | ")}\n`;
+        if (data.paragraphs?.length) prompt += `- Content Sections:\n${data.paragraphs.map((p: string) => `  • ${p}`).join("\n")}\n`;
+        if (data.buttons?.length) prompt += `- Buttons/CTAs: ${data.buttons.join(", ")}\n`;
+        if (data.images?.length) prompt += `- Image Descriptions: ${data.images.join(", ")}\n`;
+        if (data.sections?.length) prompt += `- Page Sections/Landmarks: ${data.sections.join(", ")}\n`;
+        prompt += `\nGenerate a complete, modern, responsive HTML website (body content only) that recreates this design using Tailwind CSS and Flowbite components. Match the layout, sections, and content structure as closely as possible while making it visually stunning.`;
+        finalContent = prompt;
+      } catch (error) {
+        console.error("Failed to scrape URL:", error);
+        toast.error("Could not analyze the website, generating from URL text...");
+        finalContent = `Recreate a website similar to ${userInput}. Generate a complete, modern, responsive HTML website (body content only) using Tailwind CSS and Flowbite components.`;
+      }
+    }
+
     const messages = [
       {
         role: "user",
-        content: userInput,
+        content: finalContent,
         image: imageUrl, // attach uploaded image URL if available
       },
     ];
@@ -137,14 +178,14 @@ const Hero = () => {
         )}
 
         <textarea
-          placeholder="Describe your page design"
+          placeholder="Describe your page design or paste a website URL..."
           className="w-full h-24 focus:outline-none focus:ring-0 resize-none"
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
         />
 
         <div className="flex justify-between items-center">
-          <div>
+          <div className="flex items-center gap-1">
             <input
               type="file"
               accept="image/*"
@@ -159,6 +200,12 @@ const Hero = () => {
             >
               <ImagePlus />
             </Button>
+            {inputIsUrl && (
+              <span className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full font-medium animate-in fade-in">
+                <Link2 className="w-3 h-3" />
+                URL detected
+              </span>
+            )}
           </div>
 
           {!user ? (

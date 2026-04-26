@@ -45,7 +45,7 @@ export const AppSidebar = () => {
           </SidebarGroupLabel>
 
           {!loading && projectList.length === 0 && (
-            <h2 className="text-sm px-2 text-gray-500">Loading...</h2>
+            <h2 className="text-sm px-2 text-gray-500">No projects yet</h2>
           )}
 
           <div>

@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Messages } from "../[projectId]/page";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Link2 } from "lucide-react";
 import { useState } from "react";
 
 type Props = {
@@ -13,6 +13,18 @@ type Props = {
 
 const ChatSection = ({ messages, onSend, loading }: Props) => {
   const [input, setInput] = useState<string>("");
+
+  /** Check if current input is a URL */
+  const inputIsUrl = (() => {
+    try {
+      const trimmed = input.trim();
+      if (!/^https?:\/\//i.test(trimmed)) return false;
+      new URL(trimmed);
+      return true;
+    } catch {
+      return false;
+    }
+  })();
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -68,21 +80,29 @@ const ChatSection = ({ messages, onSend, loading }: Props) => {
       </div>
 
       {/* Footer */}
-      <div className="p-3 border-t flex items-center gap-2">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Describe your website design idea..."
-          className="flex-1 resize-none border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
-        />
-        <Button
-          size={"icon-lg"}
-          className="rounded-full"
-          onClick={handleSend}
-          disabled={loading || !input.trim()}
-        >
-          <ArrowUp />
-        </Button>
+      <div className="p-3 border-t space-y-2">
+        {inputIsUrl && (
+          <span className="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full font-medium">
+            <Link2 className="w-3 h-3" />
+            URL detected — will analyze & recreate
+          </span>
+        )}
+        <div className="flex items-center gap-2">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Describe your design or paste a website URL..."
+            className="flex-1 resize-none border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
+          />
+          <Button
+            size={"icon-lg"}
+            className="rounded-full"
+            onClick={handleSend}
+            disabled={loading || !input.trim()}
+          >
+            <ArrowUp />
+          </Button>
+        </div>
       </div>
     </div>
   );
