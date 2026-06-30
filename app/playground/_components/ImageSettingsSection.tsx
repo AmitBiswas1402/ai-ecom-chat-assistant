@@ -6,7 +6,7 @@ import {
   Image as ImageIcon,
   Crop,
   Expand,
-  Image as ImageUpscale, // no lucide-react upscale, using Image icon
+  Image as ImageUpscale,
   ImageMinus,
   Loader2Icon,
 } from "lucide-react";
@@ -26,30 +26,10 @@ type Props = {
 };
 
 const transformOptions = [
-  {
-    label: "Smart Crop",
-    value: "smartcrop",
-    icon: <Crop />,
-    transformation: "fo-auto",
-  },
-  {
-    label: "Resize",
-    value: "resize",
-    icon: <Expand />,
-    transformation: "e-dropshadow",
-  },
-  {
-    label: "Upscale",
-    value: "upscale",
-    icon: <ImageUpscale />,
-    transformation: "e-upscale",
-  },
-  {
-    label: "BG Remove",
-    value: "bgremove",
-    icon: <ImageMinus />,
-    transformation: "e-bgremove",
-  },
+  { label: "Smart Crop", value: "smartcrop", icon: <Crop size={14} />, transformation: "fo-auto" },
+  { label: "Resize", value: "resize", icon: <Expand size={14} />, transformation: "e-dropshadow" },
+  { label: "Upscale", value: "upscale", icon: <ImageUpscale size={14} />, transformation: "e-upscale" },
+  { label: "BG Remove", value: "bgremove", icon: <ImageMinus size={14} />, transformation: "e-bgremove" },
 ];
 
 const imagekit = new ImageKit({
@@ -64,14 +44,11 @@ const ImageSettingSection = ({ selectedEl, clearSelection }: Props) => {
   const [height, setHeight] = useState<number>(selectedEl.height || 200);
   const [selectedImage, setSelectedImage] = useState<File>();
   const [loading, setLoading] = useState(false);
-  const [borderRadius, setBorderRadius] = useState(
-    selectedEl.style.borderRadius || "0px"
-  );
+  const [borderRadius, setBorderRadius] = useState(selectedEl.style.borderRadius || "0px");
   const [preview, setPreview] = useState(selectedEl.src || "");
   const [activeTransforms, setActiveTransforms] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Toggle transform
   const toggleTransform = (value: string) => {
     setActiveTransforms((prev) =>
       prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]
@@ -83,9 +60,7 @@ const ImageSettingSection = ({ selectedEl, clearSelection }: Props) => {
     if (file) {
       setSelectedImage(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
+      reader.onloadend = () => setPreview(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
@@ -99,21 +74,16 @@ const ImageSettingSection = ({ selectedEl, clearSelection }: Props) => {
         fileName: Date.now() + ".png",
         isPublished: true,
       });
-
-      console.log(imageRef);
       //@ts-ignore
       selectedEl.setAttribute("src", imageRef?.url + "?tr=");
       setLoading(false);
     }
   };
 
-  const openFileDialog = () => {
-    fileInputRef.current?.click();
-  };
+  const openFileDialog = () => fileInputRef.current?.click();
 
   const GenerateAiImage = async () => {
     setLoading(true);
-
     const url = `https://ik.imagekit.io/obw9ltpba/ik-genimg-prompt-${altText}/${Date.now()}.png?tr=`;
     setPreview(url);
     selectedEl.setAttribute("src", url);
@@ -133,100 +103,88 @@ const ImageSettingSection = ({ selectedEl, clearSelection }: Props) => {
   };
 
   return (
-    <div className="w-96 max-w-full shadow-lg bg-white dark:bg-gray-900 p-5 space-y-5 relative rounded-2xl border border-gray-200 dark:border-gray-800 transition-all duration-300">
-      {/* Close button */}
-      <Button
-        variant={'ghost'}
-        onClick={clearSelection}
-        size={'icon'}
-        className="absolute top-3 right-3 rounded-full dark:hover:bg-gray-700 transition"
-        aria-label="Close settings"
-      >
-        <X size={18} />
-      </Button>
+    <div className="w-80 shrink-0 shadow-lg bg-[#0d1117] border-l border-white/[0.06] p-4 space-y-4 relative rounded-r-2xl overflow-auto h-full">
+      {/* Close */}
+      <div className="flex items-center justify-between">
+        <h2 className="flex gap-2 items-center font-semibold text-foreground text-sm">
+          <ImageIcon size={16} className="text-primary" /> Image Settings
+        </h2>
+        <Button
+          variant="ghost"
+          onClick={clearSelection}
+          size="icon"
+          className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.06]"
+        >
+          <X size={16} />
+        </Button>
+      </div>
 
-      {/* Header */}
-      <h2 className="flex gap-2 items-center font-semibold text-gray-800 dark:text-gray-200 text-lg">
-        <ImageIcon size={20} /> Image Settings
-      </h2>
-
-
-      {/* Preview (clickable) */}
+      {/* Preview */}
       <div className="flex justify-center">
         <img
           src={preview}
           alt={altText}
-          className="max-h-40 object-contain border rounded cursor-pointer hover:opacity-80"
+          className="max-h-36 object-contain border border-white/[0.08] rounded-lg cursor-pointer hover:opacity-80"
           onClick={openFileDialog}
           onLoad={() => setLoading(false)}
         />
       </div>
 
-      {/* Hidden file input */}
-      <input
-        type="file"
-        accept="image/*"
-        className="hidden"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-      />
+      <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
 
-      {/* Upload Button */}
+      {/* Upload */}
       <Button
         type="button"
         variant="outline"
-        className="w-full"
+        className="w-full h-8 bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] text-foreground text-xs"
         onClick={saveUploadedFile}
         disabled={loading}
       >
-        {loading && <Loader2Icon className="animate-spin" />} Upload Image
+        {loading && <Loader2Icon className="animate-spin mr-1.5" size={14} />} Upload Image
       </Button>
 
-      {/* Alt text */}
+      {/* Prompt */}
       <div>
-        <label className="text-sm">Prompt</label>
+        <label className="text-xs text-muted-foreground">Prompt</label>
         <Input
           type="text"
           value={altText}
           onChange={(e) => setAltText(e.target.value)}
-          placeholder="Enter alt text"
-          className="mt-1"
+          placeholder="Describe the image"
+          className="mt-1 h-8 bg-white/[0.04] border-white/[0.08] text-foreground text-xs"
         />
       </div>
 
-      <Button className="w-full" onClick={GenerateAiImage} disabled={loading}>
-        {loading && <Loader2Icon className="animate-spin" />} Generate AI Image
+      <Button className="w-full h-8 bg-primary/15 text-primary border border-primary/25 hover:bg-primary/25 text-xs" onClick={GenerateAiImage} disabled={loading}>
+        {loading && <Loader2Icon className="animate-spin mr-1.5" size={14} />} Generate AI Image
       </Button>
 
       {/* Transform Buttons */}
       <div>
-        <label className="text-sm mb-1 block">AI Transform</label>
-        <div className="flex gap-2 flex-wrap">
+        <label className="text-xs text-muted-foreground mb-1.5 block">AI Transform</label>
+        <div className="flex gap-1.5 flex-wrap">
           <TooltipProvider>
-            {transformOptions.map((opt) => {
-              const applied = activeTransforms.includes(opt.value);
-              return (
-                <Tooltip key={opt.value}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant={
-                        preview.includes(opt.transformation)
-                          ? "default"
-                          : "outline"
-                      }
-                      className="flex items-center justify-center p-2"
-                      onClick={() => ApplyTransformation(opt.transformation)}
-                    >
-                      {opt.icon}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {opt.label} {applied && "(Applied)"}
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
+            {transformOptions.map((opt) => (
+              <Tooltip key={opt.value}>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant={preview.includes(opt.transformation) ? "default" : "outline"}
+                    className={`h-8 w-8 p-0 ${
+                      preview.includes(opt.transformation)
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-white/[0.04] border-white/[0.08] text-muted-foreground hover:bg-white/[0.08]"
+                    }`}
+                    onClick={() => ApplyTransformation(opt.transformation)}
+                  >
+                    {opt.icon}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-[#161b22] border-white/[0.08] text-foreground text-xs">
+                  {opt.label}
+                </TooltipContent>
+              </Tooltip>
+            ))}
           </TooltipProvider>
         </div>
       </div>
@@ -235,35 +193,25 @@ const ImageSettingSection = ({ selectedEl, clearSelection }: Props) => {
       {activeTransforms.includes("resize") && (
         <div className="flex gap-2">
           <div className="flex-1">
-            <label className="text-sm">Width</label>
-            <Input
-              type="number"
-              value={width}
-              onChange={(e) => setWidth(Number(e.target.value))}
-              className="mt-1"
-            />
+            <label className="text-xs text-muted-foreground">Width</label>
+            <Input type="number" value={width} onChange={(e) => setWidth(Number(e.target.value))} className="mt-1 h-8 bg-white/[0.04] border-white/[0.08] text-foreground text-xs" />
           </div>
           <div className="flex-1">
-            <label className="text-sm">Height</label>
-            <Input
-              type="number"
-              value={height}
-              onChange={(e) => setHeight(Number(e.target.value))}
-              className="mt-1"
-            />
+            <label className="text-xs text-muted-foreground">Height</label>
+            <Input type="number" value={height} onChange={(e) => setHeight(Number(e.target.value))} className="mt-1 h-8 bg-white/[0.04] border-white/[0.08] text-foreground text-xs" />
           </div>
         </div>
       )}
 
       {/* Border Radius */}
       <div>
-        <label className="text-sm">Border Radius</label>
+        <label className="text-xs text-muted-foreground">Border Radius</label>
         <Input
           type="text"
           value={borderRadius}
           onChange={(e) => setBorderRadius(e.target.value)}
           placeholder="e.g. 8px or 50%"
-          className="mt-1"
+          className="mt-1 h-8 bg-white/[0.04] border-white/[0.08] text-foreground text-xs"
         />
       </div>
     </div>

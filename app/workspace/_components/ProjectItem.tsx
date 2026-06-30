@@ -65,12 +65,12 @@ const ProjectItem = ({ project, GetProjectList }: ProjectItemProps) => {
   return (
     <div
       key={project.projectId}
-      className="py-1 px-2 rounded-lg cursor-pointer hover:bg-gray-300 hover:border-black hover:shadow-lg flex items-center justify-between"
+      className="py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-sidebar-accent hover:text-sidebar-accent-foreground border border-transparent hover:border-sidebar-border transition-all duration-200 flex items-center justify-between group"
     >
       {/* Project Link */}
       <Link
         href={`/playground/${project.projectId}?frameId=${project.frameId}`}
-        className="flex-1 line-clamp-1"
+        className="flex-1 line-clamp-1 text-sm font-medium text-sidebar-foreground/90 group-hover:text-sidebar-foreground transition-colors"
       >
         {title}
       </Link>
@@ -81,7 +81,7 @@ const ProjectItem = ({ project, GetProjectList }: ProjectItemProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="hover:bg-gray-200 rounded-full"
+            className="hover:bg-sidebar-accent/80 text-muted-foreground hover:text-foreground rounded-full h-8 w-8 transition-colors shrink-0"
           >
             <MoreVertical className="h-4 w-4" />
           </Button>
@@ -89,10 +89,10 @@ const ProjectItem = ({ project, GetProjectList }: ProjectItemProps) => {
 
         <PopoverContent
           align="start"
-          className="w-40 p-2 bg-white border border-gray-200 shadow-md rounded-xl cursor-pointer"
+          className="w-40 p-1 bg-popover text-popover-foreground border border-border shadow-md rounded-xl cursor-pointer"
         >
           <button
-            className="flex items-center gap-2 w-full p-2 text-sm text-gray-800 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+            className="flex items-center gap-2 w-full p-2 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer text-left"
             onClick={() => setOpenDialog(true)}
           >
             <Edit3 className="w-4 h-4" />
@@ -100,7 +100,7 @@ const ProjectItem = ({ project, GetProjectList }: ProjectItemProps) => {
           </button>
 
           <button
-            className="flex items-center gap-2 w-full p-2 text-sm text-red-600 rounded-md hover:bg-red-50 transition-colors cursor-pointer"
+            className="flex items-center gap-2 w-full p-2 text-sm text-destructive hover:bg-destructive/10 rounded-md transition-colors cursor-pointer text-left"
             onClick={() => setOpenDeleteDialog(true)}
           >
             <Trash2 className="w-4 h-4" />
@@ -122,7 +122,7 @@ const ProjectItem = ({ project, GetProjectList }: ProjectItemProps) => {
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            className="border p-2 rounded-md w-full"
+            className="border border-border bg-background text-foreground p-2 rounded-md w-full focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring text-sm"
           />
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

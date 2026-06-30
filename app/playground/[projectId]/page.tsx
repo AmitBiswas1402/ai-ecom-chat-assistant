@@ -2,10 +2,16 @@
 import { useParams, useSearchParams } from "next/navigation";
 import ChatSection from "../_components/ChatSection";
 import PlayGroundHeader from "../_components/PlayGroundHeader";
-import WebsiteDesign from "../_components/WebsiteDesign";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import CodeSandboxWorkspace from "../_components/CodeSandboxWorkspace";
 
 export type Frame = {
   projectId: string;
@@ -20,7 +26,6 @@ export type Messages = {
   image?: string; 
 };
 
-/** Check if a string is a URL */
 const isUrl = (str: string): boolean => {
   try {
     const trimmed = str.trim();
@@ -32,7 +37,6 @@ const isUrl = (str: string): boolean => {
   }
 };
 
-/** Build an enhanced prompt from scraped page data */
 const buildUrlPrompt = (url: string, data: any): string => {
   let prompt = `Recreate a website inspired by ${url}.\n\n`;
   prompt += `Here is the extracted content from that website:\n`;
@@ -48,7 +52,6 @@ const buildUrlPrompt = (url: string, data: any): string => {
   return prompt;
 };
 
-/** Strip trailing code fence markers from generated code */
 const cleanGeneratedCode = (code: string): string => {
   return code.replace(/```\s*$/g, "").trim();
 };
@@ -108,8 +111,10 @@ const PlayGround = () => {
   const { projectId } = useParams();
   const params = useSearchParams();
   const frameId = params.get("frameId");
+  const isMobile = useIsMobile();
   const [frameDetails, setFrameDetails] = useState<Frame>();
   const [loading, setLoading] = useState(false);
+  const [frameLoading, setFrameLoading] = useState(true);
   const [messages, setMessages] = useState<Messages[]>([]);
   const [generatedCode, setGeneratedCode] = useState<string>();
 
@@ -118,43 +123,42 @@ const PlayGround = () => {
   }, [frameId]);
 
   const GetFrameDetails = async () => {
-    const result = await axios.get(
-      "/api/frames?frameId=" + frameId + "&projectId=" + projectId
-    );
-    console.log(result.data);
-    setFrameDetails(result.data);
+    setFrameLoading(true);
+    try {
+      const result = await axios.get(
+        "/api/frames?frameId=" + frameId + "&projectId=" + projectId
+      );
+      setFrameDetails(result.data);
 
-    // const designCode = result.data?.designCode;
-    // const index = designCode.indexOf("```html") + 7;
-    // const formattedCode = designCode.slice(index);
-    // setGeneratedCode(formattedCode);
+      const designCode = result.data?.designCode ?? "";
+      if (designCode && designCode.includes("```html")) {
+        const index = designCode.indexOf("```html") + 7;
+        setGeneratedCode(cleanGeneratedCode(designCode.slice(index)));
+      } else {
+        setGeneratedCode(designCode || "");
+      }
 
-    const designCode = result.data?.designCode ?? "";
-
-    // Safely check before processing
-    if (designCode && designCode.includes("```html")) {
-      const index = designCode.indexOf("```html") + 7;
-      const formattedCode = cleanGeneratedCode(designCode.slice(index));
-      setGeneratedCode(formattedCode);
-    } else {
-      setGeneratedCode(designCode || ""); 
-    }
-
-    if (result.data?.chatMessages?.length == 1) {
-      const userMsg = result.data?.chatMessages[0].content;
-      SendMessage(userMsg);
-    } else {
-      setMessages(result.data?.chatMessages);
+      if (result.data?.chatMessages?.length === 1 && !designCode) {
+        const chatMsg = result.data?.chatMessages[0];
+        SendMessage(chatMsg.content, chatMsg.image);
+      } else {
+        setMessages(result.data?.chatMessages);
+      }
+    } catch (err) {
+      console.error("Failed to load frame:", err);
+      toast.error("Could not load project frame.");
+    } finally {
+      setFrameLoading(false);
     }
   };
 
-  const SendMessage = async (userInput: string) => {
+  const SendMessage = async (userInput: string, imageUrl?: string) => {
     setLoading(true);
 
-    // Add user message to chat
-    setMessages((prev: any) => [...prev, { role: "user", content: userInput }]);
+    const userMsg: Messages = { role: "user", content: userInput };
+    if (imageUrl) userMsg.image = imageUrl;
+    setMessages((prev: any) => [...prev, userMsg]);
 
-    // Check if user input is a URL — if so, scrape and build enhanced prompt
     let finalPrompt = userInput;
     if (isUrl(userInput)) {
       try {
@@ -170,63 +174,85 @@ const PlayGround = () => {
       }
     }
 
-    const result = await fetch("/api/ai-model", {
-      method: "POST",
-      body: JSON.stringify({
+    try {
+      const body: any = {
         messages: [
           { role: "user", content: Prompt?.replace("{userInput}", finalPrompt) },
         ],
-      }),
-    });
+      };
+      if (imageUrl) body.imageUrl = imageUrl;
 
-    let aiResponse = "";
-    let isCode = false;
-    const reader = result.body?.getReader();
-    const decoder = new TextDecoder();
+      const result = await fetch("/api/ai-model", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
 
-    while (true) {
-      //@ts-ignore
-      const { done, value } = await reader?.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      aiResponse += chunk;
-
-      if (!isCode && aiResponse.includes("```html")) {
-        isCode = true;
-        const index = aiResponse.indexOf("```html") + 7;
-        const initialCodeChunk = aiResponse.slice(index);
-        setGeneratedCode((prev: any) => (prev || "") + initialCodeChunk);
-      } else if (isCode) {
-        setGeneratedCode((prev: any) => (prev || "") + chunk);
+      if (!result.ok) {
+        const errData = await result.json().catch(() => ({}));
+        throw new Error(errData?.error || "AI model request failed");
       }
-    }
 
-    // Clean trailing code fence from generated code
-    if (isCode) {
-      setGeneratedCode((prev) => cleanGeneratedCode(prev || ""));
-    }
+      let aiResponse = "";
+      let isCode = false;
+      const reader = result.body?.getReader();
+      const decoder = new TextDecoder();
 
-    await SaveGeneratedCode(aiResponse);
-    // After streaming end
-    if (!isCode) {
+      while (true) {
+        //@ts-ignore
+        const { done, value } = await reader?.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        aiResponse += chunk;
+
+        if (!isCode && aiResponse.includes("```html")) {
+          isCode = true;
+          const index = aiResponse.indexOf("```html") + 7;
+          const initialCodeChunk = aiResponse.slice(index);
+          setGeneratedCode((prev: any) => (prev || "") + initialCodeChunk);
+        } else if (isCode) {
+          setGeneratedCode((prev: any) => (prev || "") + chunk);
+        }
+      }
+
+      if (isCode) {
+        setGeneratedCode((prev) => cleanGeneratedCode(prev || ""));
+      }
+
+      await SaveGeneratedCode(aiResponse);
+      if (!isCode) {
+        setMessages((prev: any) => [
+          ...prev,
+          { role: "assistant", content: aiResponse },
+        ]);
+      } else {
+        setMessages((prev: any) => [
+          ...prev,
+          { role: "assistant", content: "Your code is ready!" },
+        ]);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "AI request failed");
       setMessages((prev: any) => [
         ...prev,
-        { role: "assistant", content: aiResponse },
-      ]);
-    } else {
-      setMessages((prev: any) => [
-        ...prev,
-        { role: "assistant", content: "Your code is ready!" },
+        { role: "assistant", content: `Error: ${error.message || "Something went wrong"}` },
       ]);
     }
     setLoading(false);
   };
 
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     if (messages.length > 0) {
-      SaveMessages();
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        SaveMessages();
+      }, 1500);
     }
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
   }, [messages]);
 
   const SaveMessages = async () => {
@@ -247,20 +273,54 @@ const PlayGround = () => {
     toast.success("Website is Ready!");
   };
 
+  if (frameLoading) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <PlayGroundHeader />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative w-12 h-12">
+              <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+              <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            </div>
+            <p className="text-sm text-muted-foreground/70 font-medium">Loading project...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div className="flex h-screen flex-col overflow-hidden">
       <PlayGroundHeader />
 
-      <div className="flex">
-        {/* Chat section */}
-        <ChatSection
-          messages={messages ?? []}
-          onSend={(input: string) => SendMessage(input)}
-          loading={loading}
-        />
+      <div className="flex-1 min-h-0 p-2 md:p-3">
+        <ResizablePanelGroup
+          direction={isMobile ? "vertical" : "horizontal"}
+          className="h-full rounded-2xl border border-border/30 bg-background shadow-sm overflow-hidden"
+        >
+          <ResizablePanel
+            defaultSize={isMobile ? 32 : 28}
+            minSize={isMobile ? 20 : 22}
+            className="min-h-0"
+          >
+            <ChatSection
+              messages={messages ?? []}
+              onSend={(input: string) => SendMessage(input)}
+              loading={loading}
+            />
+          </ResizablePanel>
 
-        {/* Website design */}
-        <WebsiteDesign generatedCode={generatedCode ?? ""} />
+          <ResizableHandle withHandle />
+
+          <ResizablePanel
+            defaultSize={isMobile ? 68 : 72}
+            minSize={35}
+            className="min-h-0"
+          >
+            <CodeSandboxWorkspace generatedCode={generatedCode ?? ""} />
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
   );

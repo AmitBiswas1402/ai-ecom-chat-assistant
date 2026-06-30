@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import Provider from "./provider";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/Themes";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
@@ -21,10 +22,17 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body className={outfit.className} suppressHydrationWarning>
-          <Provider>
-            {children}
-            <Toaster />
-          </Provider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <Provider>
+              {children}
+              <Toaster />
+            </Provider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

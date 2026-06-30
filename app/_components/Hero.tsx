@@ -13,8 +13,10 @@ import {
   LayoutDashboard,
   Link2,
   Loader2Icon,
+  Sparkles,
   User,
   X,
+  Zap,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -26,23 +28,31 @@ const suggestions = [
     prompt:
       "Create a responsive SaaS analytics dashboard with charts and KPI cards.",
     icon: LayoutDashboard,
+    color: "text-violet-400",
+    bg: "hover:bg-violet-500/10 hover:border-violet-500/30",
   },
   {
     label: "SignUp Form",
     prompt:
       "Design a modern signup form with email, password, and social login options.",
     icon: Key,
+    color: "text-sky-400",
+    bg: "hover:bg-sky-500/10 hover:border-sky-500/30",
   },
   {
     label: "Hero",
     prompt: "Build a SaaS hero section with title, subtitle, CTA, and image.",
     icon: HomeIcon,
+    color: "text-emerald-400",
+    bg: "hover:bg-emerald-500/10 hover:border-emerald-500/30",
   },
   {
     label: "User Profile Card",
     prompt:
       "Create a user profile card with avatar, name, bio, and follow button.",
     icon: User,
+    color: "text-pink-400",
+    bg: "hover:bg-pink-500/10 hover:border-pink-500/30",
   },
 ];
 
@@ -132,7 +142,7 @@ const Hero = () => {
       {
         role: "user",
         content: finalContent,
-        image: imageUrl, // attach uploaded image URL if available
+        image: imageUrl,
       },
     ];
 
@@ -153,96 +163,165 @@ const Hero = () => {
   };
 
   return (
-    <div className="flex flex-col items-center h-[80vh] justify-center">
-      {/* Header */}
-      <h2 className="font-bold text-7xl">What should we Design?</h2>
-      <p className="mt-2 text-xl text-gray-500">Explore with AI</p>
+    <div className="relative flex flex-col items-center min-h-[88vh] justify-center px-4 overflow-hidden">
+      {/* Animated background orbs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div
+          className="orb-1 absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle, oklch(0.55 0.22 290 / 0.18) 0%, transparent 70%)",
+            filter: "blur(40px)",
+          }}
+        />
+        <div
+          className="orb-2 absolute top-1/2 -left-32 w-[420px] h-[420px] rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle, oklch(0.55 0.20 220 / 0.14) 0%, transparent 70%)",
+            filter: "blur(50px)",
+          }}
+        />
+        <div
+          className="orb-3 absolute top-1/3 -right-32 w-[380px] h-[380px] rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle, oklch(0.55 0.22 320 / 0.12) 0%, transparent 70%)",
+            filter: "blur(50px)",
+          }}
+        />
+      </div>
+
+      {/* "New" badge */}
+      <div className="relative mb-6 flex items-center gap-2 badge-shimmer border border-primary/20 rounded-full px-4 py-1.5">
+        <Zap className="w-3.5 h-3.5 text-primary" />
+        <span className="text-xs font-medium text-primary/90 tracking-wide">
+          AI-Powered Web Design
+        </span>
+        <span className="ml-1 bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+          NEW
+        </span>
+      </div>
+
+      {/* Heading */}
+      <h1 className="hero-gradient-text font-extrabold text-5xl md:text-[68px] tracking-tighter text-center leading-[1.06] max-w-3xl">
+        What should we Design?
+      </h1>
+      <p className="mt-5 text-base md:text-lg text-muted-foreground/75 font-normal tracking-tight text-center max-w-md leading-relaxed">
+        Describe anything — from a landing page to a full dashboard.{" "}
+        <span className="text-primary/80 font-medium">AI builds it instantly.</span>
+      </p>
 
       {/* Input Box */}
-      <div className="w-full max-w-xl p-5 border mt-5 rounded-2xl">
-        {/* Image Preview */}
-        {imagePreview && (
-          <div className="relative mb-3">
-            <img
-              src={imagePreview}
-              alt="Preview"
-              className="rounded-lg w-full max-h-60 object-contain"
-            />
-            <button
-              onClick={removeImage}
-              className="absolute top-2 right-2 bg-black/50 hover:bg-black text-white p-1 rounded-full"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        <textarea
-          placeholder="Describe your page design or paste a website URL..."
-          className="w-full h-24 focus:outline-none focus:ring-0 resize-none"
-          value={userInput}
-          onChange={(e) => setUserInput(e.target.value)}
+      <div className="relative w-full max-w-xl mt-10">
+        {/* Subtle glow ring behind the card */}
+        <div
+          className="absolute inset-0 rounded-[32px] pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 60% at 50% 100%, oklch(0.72 0.2 290 / 0.12), transparent 70%)",
+            filter: "blur(12px)",
+          }}
         />
+        <div className="relative input-card-glow p-5 border border-border/60 bg-card/60 backdrop-blur-xl rounded-[28px]">
+          {/* Image Preview */}
+          {imagePreview && (
+            <div className="relative mb-4 rounded-xl overflow-hidden border border-border/40 bg-accent/10">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="rounded-lg w-full max-h-60 object-contain mx-auto"
+              />
+              <button
+                onClick={removeImage}
+                className="absolute top-2 right-2 bg-background/80 hover:bg-destructive/20 text-foreground hover:text-destructive p-1.5 rounded-full backdrop-blur-sm border border-border/45 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-1">
-            <input
-              type="file"
-              accept="image/*"
-              id="image-upload"
-              onChange={handleImageUpload}
-              className="hidden"
-            />
-            <Button
-              variant={"ghost"}
-              size={"icon"}
-              onClick={() => document.getElementById("image-upload")?.click()}
-            >
-              <ImagePlus />
-            </Button>
-            {inputIsUrl && (
-              <span className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full font-medium animate-in fade-in">
-                <Link2 className="w-3 h-3" />
-                URL detected
-              </span>
-            )}
-          </div>
+          <textarea
+            placeholder="Describe your page design or paste a website URL..."
+            className="w-full h-24 focus:outline-none focus:ring-0 resize-none bg-transparent text-foreground placeholder:text-muted-foreground/40 text-sm md:text-[15px] leading-relaxed"
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+          />
 
-          {!user ? (
-            <SignInButton mode="modal" forceRedirectUrl={"/workspace"}>
+          <div className="flex justify-between items-center mt-3 pt-3 border-t border-border/30">
+            <div className="flex items-center gap-1.5">
+              <input
+                type="file"
+                accept="image/*"
+                id="image-upload"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              <Button
+                variant={"ghost"}
+                size={"icon"}
+                onClick={() => document.getElementById("image-upload")?.click()}
+                className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary text-muted-foreground transition-all"
+              >
+                <ImagePlus className="w-5 h-5" />
+              </Button>
+              {inputIsUrl && (
+                <span className="flex items-center gap-1 text-xs text-primary bg-primary/10 border border-primary/25 px-2.5 py-1 rounded-full font-medium animate-in fade-in zoom-in-95 duration-200">
+                  <Link2 className="w-3.5 h-3.5" />
+                  URL detected
+                </span>
+              )}
+            </div>
+
+            {!user ? (
+              <SignInButton mode="modal" forceRedirectUrl={"/workspace"}>
+                <Button
+                  size={"icon-lg"}
+                  className="rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:opacity-90 hover:scale-[1.04] active:scale-[0.97] transition-all"
+                  disabled={!userInput}
+                >
+                  <ArrowUp />
+                </Button>
+              </SignInButton>
+            ) : (
               <Button
                 size={"icon-lg"}
-                className="rounded-full"
-                disabled={!userInput}
+                className="rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:opacity-90 hover:scale-[1.04] active:scale-[0.97] transition-all"
+                disabled={!userInput || loading}
+                onClick={CreateNewProject}
               >
-                <ArrowUp />
+                {loading ? <Loader2Icon className="animate-spin" /> : <ArrowUp />}
               </Button>
-            </SignInButton>
-          ) : (
-            <Button
-              size={"icon-lg"}
-              className="rounded-full"
-              disabled={!userInput || loading}
-              onClick={CreateNewProject}
-            >
-              {loading ? <Loader2Icon className="animate-spin" /> : <ArrowUp />}
-            </Button>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
       {/* Suggestions */}
-      <div className="mt-4 flex gap-2.5 flex-wrap justify-center">
+      <div className="mt-8 flex gap-2 flex-wrap justify-center max-w-xl">
         {suggestions.map((suggestion, index) => (
           <Button
             key={index}
             variant={"outline"}
             onClick={() => setUserInput(suggestion.prompt)}
+            className={`rounded-full px-3.5 py-1 text-xs border-border/40 ${suggestion.bg} ${suggestion.color} transition-all duration-200 flex items-center gap-1.5 font-normal tracking-wide`}
           >
-            <suggestion.icon className="mr-1" />
+            <suggestion.icon className="w-3.5 h-3.5" />
             {suggestion.label}
           </Button>
         ))}
+      </div>
+
+      {/* Subtle stats row */}
+      <div className="mt-12 flex items-center gap-6 text-xs text-muted-foreground/50">
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-primary/50" />
+          <span>Powered by Gemini</span>
+        </div>
+        <div className="w-px h-3 bg-border/50" />
+        <span>No code required</span>
+        <div className="w-px h-3 bg-border/50" />
+        <span>Instant preview</span>
       </div>
     </div>
   );

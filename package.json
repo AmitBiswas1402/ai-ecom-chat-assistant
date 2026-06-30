@@ -10,6 +10,7 @@
   "dependencies": {
     "@clerk/nextjs": "^6.33.6",
     "@codesandbox/sandpack-react": "^2.20.0",
+    "@codesandbox/sandpack-themes": "^2.0.21",
     "@hookform/resolvers": "^5.2.2",
     "@neondatabase/serverless": "^1.0.2",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -50,6 +51,7 @@
     "highlight.js": "^11.11.1",
     "imagekit": "^6.0.0",
     "input-otp": "^1.4.2",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.545.0",
     "next": "15.5.5",
     "next-themes": "^0.4.6",

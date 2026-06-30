@@ -3,32 +3,54 @@ import axios from "axios";
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages } = await req.json();
+    const { messages, imageUrl } = await req.json();
+    const gemmaMessages = [...messages];
+
+    if (imageUrl && gemmaMessages.length > 0) {
+      const last = gemmaMessages[gemmaMessages.length - 1];
+      last.content = [
+        { type: "text", text: last.content },
+        { type: "image_url", image_url: { url: imageUrl } },
+      ];
+    }
 
     const response = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
         // model: "google/gemma-3-4b-it:free", 
-        model: "google/gemma-3-27b-it:free",
+        // model: "google/gemma-3-27b-it:free",
+        model: "google/gemma-4-31b-it:free",
         // model: "meta-llama/llama-4-maverick:free",
         // model: "google/gemini-2.0-flash-exp:free",
-        messages,
-        stream: true, // enable streaming
+        messages: gemmaMessages,
+        stream: true,
       },
       {
         headers: {
           Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": "http://localhost:3000", // optional
-          "X-Title": "My Next.js App", // optional
+          "HTTP-Referer": "http://localhost:3000",
+          "X-Title": "My Next.js App",
         },
-        responseType: "stream", // important for streaming
+        responseType: "stream",
+        validateStatus: (status) => status < 500,
       }
     );
 
-    const stream = response.data;
+    if (!response.data || response.status !== 200) {
+      const errorBody = await new Promise<string>((resolve) => {
+        let body = "";
+        response.data.on("data", (chunk: any) => { body += chunk.toString(); });
+        response.data.on("end", () => resolve(body));
+      });
+      const parsed = JSON.parse(errorBody);
+      return NextResponse.json(
+        { error: parsed.error?.message || "Upstream API error" },
+        { status: response.status }
+      );
+    }
 
-    // Return as a web stream so frontend can consume
+    const stream = response.data;
     const encoder = new TextEncoder();
 
     const readable = new ReadableStream({
@@ -47,8 +69,8 @@ export async function POST(req: NextRequest) {
                 if (text) {
                   controller.enqueue(encoder.encode(text));
                 }
-              } catch (error) {
-                console.error("Error parsing stream", error);
+              } catch {
+                // skip malformed chunks
               }
             }
           }
@@ -71,11 +93,15 @@ export async function POST(req: NextRequest) {
         "Transfer-Encoding": "chunked",
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("API error:", error);
-    return NextResponse.json(
-      { error: "Something went wrong" },
-      { status: 500 }
-    );
+    const message = error.response?.data
+      ? await new Promise<string>((resolve) => {
+          let body = "";
+          error.response.data.on("data", (chunk: any) => { body += chunk.toString(); });
+          error.response.data.on("end", () => resolve(body));
+        }).then((b) => JSON.parse(b).error?.message || "Something went wrong")
+      : "Something went wrong";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

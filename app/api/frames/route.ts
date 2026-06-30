@@ -8,17 +8,12 @@ export async function GET(req: NextRequest) {
   const frameId = searchParams.get("frameId");
   const projectId = searchParams.get("projectId");
 
-  const frameResult = await db
-    .select()
-    .from(frameTable)
+  const [frameResult, chatResult] = await Promise.all([
     // @ts-ignore
-    .where(eq(frameTable.frameId, frameId));
-
-  const chatResult = await db
-    .select()
-    .from(chatTable)
+    db.select().from(frameTable).where(eq(frameTable.frameId, frameId)),
     // @ts-ignore
-    .where(eq(chatTable.frameId, frameId));
+    db.select().from(chatTable).where(eq(chatTable.frameId, frameId)),
+  ]);
 
   const finalResult = {
     ...frameResult[0],
